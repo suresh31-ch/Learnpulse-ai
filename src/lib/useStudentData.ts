@@ -454,7 +454,7 @@ export function useStudentData(userId: string | null | undefined): StudentDataRe
 
         const attemptRows: StudentAttempt[] = [];
         if (attemptsResult.status === 'fulfilled' && !attemptsResult.value.error) {
-          const rows = (attemptsResult.value.data ?? []) as Array<{
+          const rows = (attemptsResult.value.data ?? []) as unknown as Array<{
             id: string;
             assessment_id: string | null;
             score: number | null;
@@ -481,7 +481,7 @@ export function useStudentData(userId: string | null | undefined): StudentDataRe
             .in('attempt_id', attemptIds)
             .limit(80);
           if (!cancelled && !responsesResult.error) {
-            const rows = (responsesResult.data ?? []) as Array<{
+            const rows = (responsesResult.data ?? []) as unknown as Array<{
               id: string;
               attempt_id: string | null;
               question_id: string | null;
@@ -506,7 +506,7 @@ export function useStudentData(userId: string | null | undefined): StudentDataRe
         }
 
         if (interventionsResult.status === 'fulfilled' && !interventionsResult.value.error) {
-          const rows = (interventionsResult.value.data ?? []) as Array<{
+          const rows = (interventionsResult.value.data ?? []) as unknown as Array<{
             id: string;
             title: string | null;
             status: string | null;
@@ -550,7 +550,7 @@ export function useStudentData(userId: string | null | undefined): StudentDataRe
         }
 
         if (questionsResult.status === 'fulfilled' && !questionsResult.value.error) {
-          const rows = (questionsResult.value.data ?? []) as Array<{
+          const rows = (questionsResult.value.data ?? []) as unknown as Array<{
             id: string;
             topic_id: string | null;
             concept_id: string | null;
@@ -591,7 +591,7 @@ export function useStudentData(userId: string | null | undefined): StudentDataRe
               .order('scheduled_at', { ascending: true })
               .limit(1);
             if (!cancelled && !sessionResult.error && sessionResult.data?.[0]) {
-              const s = sessionResult.data[0] as {
+              const s = sessionResult.data[0] as unknown as {
                 id: string;
                 title: string | null;
                 scheduled_at: string | null;

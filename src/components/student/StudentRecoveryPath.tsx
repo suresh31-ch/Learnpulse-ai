@@ -54,25 +54,25 @@ import {
 
 const SEVERITY_LABEL: Record<GapSeverity, string> = {
   critical: 'Critical Gap',
-  priority: 'Priority',
+  moderate: 'Priority',
   attention: 'Needs Attention',
 };
 
 const SEVERITY_CARD: Record<GapSeverity, string> = {
   critical: 'bg-rose-50 border-rose-200',
-  priority: 'bg-amber-50 border-amber-200',
+  moderate: 'bg-amber-50 border-amber-200',
   attention: 'bg-slate-50 border-slate-200',
 };
 
 const SEVERITY_BADGE: Record<GapSeverity, string> = {
   critical: 'bg-rose-100 text-rose-800 border-rose-200',
-  priority: 'bg-amber-100 text-amber-800 border-amber-200',
+  moderate: 'bg-amber-100 text-amber-800 border-amber-200',
   attention: 'bg-slate-100 text-slate-700 border-slate-200',
 };
 
 const SEVERITY_DOT: Record<GapSeverity, string> = {
   critical: 'bg-rose-500',
-  priority: 'bg-amber-500',
+  moderate: 'bg-amber-500',
   attention: 'bg-slate-400',
 };
 
@@ -83,9 +83,11 @@ const SEVERITY_DOT: Record<GapSeverity, string> = {
 interface GapCardProps {
   gap: DetectedGap;
   index: number;
+  onOpenTutor?: (prompt: string) => void;
+  onNavigate?: (tab: string) => void;
 }
 
-const GapCard: React.FC<GapCardProps> = ({ gap, index }) => (
+const GapCard: React.FC<GapCardProps> = ({ gap, onOpenTutor, onNavigate }) => (
   <div className={`p-4 rounded-xl border ${SEVERITY_CARD[gap.severity]}`}>
     <div className="flex items-start justify-between gap-3">
       <div className="flex items-start gap-2.5 min-w-0">
@@ -110,12 +112,33 @@ const GapCard: React.FC<GapCardProps> = ({ gap, index }) => (
               <span>Prerequisite impact: {gap.blockedPrerequisites.slice(0, 2).join(', ')}</span>
             </div>
           )}
+          {gap.recommendedFocus && (
+            <div className="mt-1.5 text-[11px] text-indigo-700 font-medium">
+              Recommended focus: {gap.recommendedFocus}
+            </div>
+          )}
         </div>
       </div>
       <div className="shrink-0 text-right">
         <span className="text-lg font-extrabold text-slate-800">{gap.masteryScore}%</span>
         <span className="block text-[10px] text-slate-400 capitalize">{gap.layer}</span>
       </div>
+    </div>
+    <div className="flex items-center gap-2 mt-3 pt-2 border-t border-slate-200/60">
+      <button
+        onClick={() => onOpenTutor?.(`Help me repair ${gap.name}. My mastery is ${gap.masteryScore}%. ${gap.evidence} Use Socratic hints.`)}
+        className="px-3 py-1.5 text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1"
+      >
+        <Brain className="w-3 h-3" />
+        Ask Tutor
+      </button>
+      <button
+        onClick={() => onNavigate?.('practice')}
+        className="px-3 py-1.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors flex items-center gap-1"
+      >
+        <Target className="w-3 h-3" />
+        Practice
+      </button>
     </div>
   </div>
 );
@@ -124,11 +147,21 @@ const GapCard: React.FC<GapCardProps> = ({ gap, index }) => (
 // Main component
 // ---------------------------------------------------------------------------
 
-export const StudentRecoveryPath: React.FC = () => {
+interface StudentRecoveryPathProps {
+  initialTab?: 'overview' | 'gaps' | 'misconceptions' | 'journey';
+  onNavigate?: (tab: string) => void;
+  onOpenTutor?: (prompt: string) => void;
+}
+
+export const StudentRecoveryPath: React.FC<StudentRecoveryPathProps> = ({
+  initialTab = 'overview',
+  onNavigate,
+  onOpenTutor,
+}) => {
   const { user, profile } = useAuth();
   const studentData = useStudentData(user?.id);
   const [activeTab, setActiveTab] = useState<'overview' | 'gaps' | 'misconceptions' | 'journey'>(
-    'overview',
+    initialTab,
   );
 
   // Seed fallbacks
@@ -139,7 +172,7 @@ export const StudentRecoveryPath: React.FC = () => {
   const trend = computeTrendFromPractice(studentData.practiceSessions);
   const nextAction = deriveNextBestAction(studentData.gaps);
   const criticalGaps = studentData.gaps.filter((g) => g.severity === 'critical');
-  const priorityGaps = studentData.gaps.filter((g) => g.severity === 'priority');
+  const moderateGaps = studentData.gaps.filter((g) => g.severity === 'moderate');
   const attentionGaps = studentData.gaps.filter((g) => g.severity === 'attention');
 
   // ---- Strongest / weakest for overview ----
@@ -356,7 +389,7 @@ export const StudentRecoveryPath: React.FC = () => {
               </div>
               <span className="text-[11px] text-rose-600/80 block mt-1">
                 {studentData.hasRealData
-                  ? `${criticalGaps.length} critical, ${priorityGaps.length} priority`
+                  ? `${criticalGaps.length} critical, ${moderateGaps.length} moderate`
                   : 'Based on demo records'}
               </span>
             </div>
@@ -618,7 +651,7 @@ export const StudentRecoveryPath: React.FC = () => {
                   {criticalGaps.length} critical
                 </span>
                 <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-                  {priorityGaps.length} priority
+                  {moderateGaps.length} moderate
                 </span>
                 <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
                   {attentionGaps.length} attention
@@ -648,18 +681,18 @@ export const StudentRecoveryPath: React.FC = () => {
                         Critical Gaps — Immediate Attention Required
                       </span>
                     </div>
-                    {criticalGaps.map((g, i) => <GapCard key={g.id} gap={g} index={i} />)}
+                    {criticalGaps.map((g, i) => <GapCard key={g.id} gap={g} index={i} onOpenTutor={onOpenTutor} onNavigate={onNavigate} />)}
                   </div>
                 )}
-                {priorityGaps.length > 0 && (
+                {moderateGaps.length > 0 && (
                   <div>
                     <div className="flex items-center gap-2 mb-2 px-1 mt-4">
                       <span className="w-2 h-2 rounded-full bg-amber-500" />
                       <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">
-                        Priority Gaps — Focus Practice Here
+                        Moderate Gaps — Focus Practice Here
                       </span>
                     </div>
-                    {priorityGaps.map((g, i) => <GapCard key={g.id} gap={g} index={i} />)}
+                    {moderateGaps.map((g, i) => <GapCard key={g.id} gap={g} index={i} onOpenTutor={onOpenTutor} onNavigate={onNavigate} />)}
                   </div>
                 )}
                 {attentionGaps.length > 0 && (
@@ -670,7 +703,7 @@ export const StudentRecoveryPath: React.FC = () => {
                         Needs Attention — Below Proficiency Threshold
                       </span>
                     </div>
-                    {attentionGaps.map((g, i) => <GapCard key={g.id} gap={g} index={i} />)}
+                    {attentionGaps.map((g, i) => <GapCard key={g.id} gap={g} index={i} onOpenTutor={onOpenTutor} onNavigate={onNavigate} />)}
                   </div>
                 )}
               </div>
@@ -995,6 +1028,110 @@ export const StudentRecoveryPath: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* What Changed? — observed improvement explanation */}
+          {studentData.hasRealData && studentData.practiceSessions.length >= 2 && (
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs">
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+                <TrendingUp className="w-4 h-4 text-indigo-600" />
+                <h3 className="text-sm font-bold text-slate-900">What Changed?</h3>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 ml-auto">
+                  LearnPulse Product Metric
+                </span>
+              </div>
+              {(() => {
+                const sessions = [...studentData.practiceSessions]
+                  .sort((a, b) => new Date(a.practisedAt).getTime() - new Date(b.practisedAt).getTime());
+                const first = sessions[0];
+                const last = sessions[sessions.length - 1];
+                const beforeScore = first.accuracy;
+                const afterScore = last.accuracy;
+                const improvement =
+                  beforeScore !== null && afterScore !== null ? afterScore - beforeScore : null;
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 rounded-xl bg-rose-50/40 border border-rose-200/70">
+                      <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider block">Before</span>
+                      <span className="text-2xl font-extrabold text-rose-600 mt-1 block">{beforeScore ?? '—'}%</span>
+                      <p className="text-[11px] text-slate-500 mt-1">First recorded practice session accuracy.</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-indigo-50/50 border border-indigo-200/70">
+                      <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block">Intervention</span>
+                      <span className="text-sm font-bold text-indigo-800 mt-1 block">
+                        {sessions.length} practice sessions
+                      </span>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Targeted practice across {studentData.gaps.length > 0 ? `${studentData.gaps.length} gap area${studentData.gaps.length !== 1 ? 's' : ''}` : 'tracked concepts'}.
+                      </p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200/70">
+                      <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">After</span>
+                      <span className="text-2xl font-extrabold text-emerald-600 mt-1 block">{afterScore ?? '—'}%</span>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        {improvement !== null && improvement > 0
+                          ? `Observed improvement: +${improvement} percentage points`
+                          : improvement !== null && improvement < 0
+                          ? `Decline: ${improvement} points — review needed`
+                          : 'No change yet'}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+              <p className="text-[11px] text-slate-400 mt-3 text-center">
+                This is a LearnPulse product metric tracking observed practice accuracy over time — not a scientifically validated universal score.
+              </p>
+            </div>
+          )}
+
+          {/* Confidence Mismatch Signals */}
+          {studentData.hasRealData && studentData.responses.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs">
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+                <Sparkles className="w-4 h-4 text-amber-600" />
+                <h3 className="text-sm font-bold text-slate-900">Confidence Calibration Signals</h3>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 ml-auto">
+                  Learning Signal
+                </span>
+              </div>
+              {(() => {
+                const highConfWrong = studentData.responses.filter(
+                  (r) => r.confidence === 'very' && !r.isCorrect,
+                );
+                const lowConfRight = studentData.responses.filter(
+                  (r) => r.confidence === 'guessing' && r.isCorrect,
+                );
+                if (highConfWrong.length === 0 && lowConfRight.length === 0) {
+                  return (
+                    <p className="text-xs text-slate-500 text-center py-4">
+                      No confidence mismatches detected — your confidence aligns with your performance.
+                    </p>
+                  );
+                }
+                return (
+                  <div className="space-y-3">
+                    {highConfWrong.length > 0 && (
+                      <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs">
+                        <span className="font-bold text-rose-900">High Confidence + Incorrect: {highConfWrong.length} response{highConfWrong.length !== 1 ? 's' : ''}</span>
+                        <p className="text-rose-700 mt-1">
+                          You marked these as "very confident" but answered incorrectly. These are prime learning opportunities — the error may be systemic, not random.
+                        </p>
+                      </div>
+                    )}
+                    {lowConfRight.length > 0 && (
+                      <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs">
+                        <span className="font-bold text-amber-900">Low Confidence + Correct: {lowConfRight.length} response{lowConfRight.length !== 1 ? 's' : ''}</span>
+                        <p className="text-amber-700 mt-1">
+                          You answered correctly but marked "guessing". Consider trusting your instincts more on these concept types.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
         </div>
       )}
     </div>
