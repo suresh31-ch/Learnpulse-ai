@@ -111,8 +111,6 @@ export const PreClassPreview: React.FC<PreClassPreviewProps> = ({
     setSubmitted(false);
   };
 
-  const dynamicReadiness = submitted ? calculateScore() : data.readinessPercentage;
-
   return (
     <div id="pre-class-preview-view" className="space-y-6">
       {/* Header Banner */}
@@ -491,19 +489,21 @@ export const PreClassPreview: React.FC<PreClassPreviewProps> = ({
               Submit Readiness Check ({Object.keys(userAnswers).length}/{data.quickQuestions.length} Answered)
             </button>
           ) : (
-            <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold text-indigo-900">Readiness Score Updated: {calculateScore()}%</span>
-                <p className="text-[11px] text-indigo-700">Results saved to your learning telemetry for tomorrow’s teacher view.</p>
+            <>
+              <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-indigo-900">Readiness Score Updated: {calculateScore()}%</span>
+                  <p className="text-[11px] text-indigo-700">Results saved to your learning telemetry for tomorrow’s teacher view.</p>
+                </div>
+                <button
+                  onClick={() => onLaunchPreparation?.(data.topicTitle)}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors"
+                >
+                  Continue to practice
+                </button>
               </div>
-              <button
-                onClick={() => onLaunchPreparation?.(data.topicTitle)}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors"
-              >
-                Continue to practice
-              </button>
-            </div>
-            {persistNote && <p className="text-[11px] text-slate-500">{persistNote}</p>}
+              {persistNote && <p className="text-[11px] text-slate-500">{persistNote}</p>}
+            </>
           )}
         </div>
       )}
