@@ -1,0 +1,8 @@
+{
+  "name": "LearnPulse AI",
+  "description": "AI-Powered Learning Intelligence Platform: Detect the gap, explain the gap, fix the gap, and measure learning recovery.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
